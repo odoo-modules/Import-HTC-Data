@@ -6,9 +6,22 @@ import os
 from os.path import join
 import ipaddress
 import sys
+import logging
+import shutil
+from os import getcwd,path
+
+
+logging.basicConfig(filename="log.txt",
+                            filemode='a',
+                            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                            datefmt='%H:%M:%S',
+                            level=logging.ERROR)
 
 if __name__ == '__main__':
     try:
+        cwd = getcwd()
+        if not path.isfile(cwd+'log.txt'):
+            open(cwd+'log.txt', 'w')
         cfg = ReadConfig()
         common = xc.ServerProxy('{}/xmlrpc/2/common'.format(cfg.url))
         common.version()
@@ -57,7 +70,24 @@ if __name__ == '__main__':
                                              'htc.site', 'search_read',
                                              [[['site_code', '=', site_code]]],
                                              {'fields': ['ip_range'], 'limit': 1})
-                    ipList = list(ipaddress.ip_network(site[0]['ip_range'], False).hosts())
+                    ipList=[]
+                    try:
+                        ipList = list(ipaddress.ip_network(site[0]['ip_range'], False).hosts())
+                    except Exception as e:
+                        logging.info(str(e))
+                        id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
+                            'create_uid': uid,
+                            'create_date': datetime.datetime.today(),
+                            'name': "Call from RPC",
+                            'type': "client",
+                            'dbname': cfg.db,
+                            'path': "",
+                            'func': "not valid ip",
+                            'line': "",
+                            'level': "ERROR",
+                            'message': str(e) + " " +obj.file_name
+                        }])
+                        continue
                     extract_ip_list = list(map(lambda x: x.compressed, ipList))
                     valid_ip = list(filter(lambda x: x == obj.ip_address, extract_ip_list))
                     if len(valid_ip) == 0:
@@ -71,7 +101,7 @@ if __name__ == '__main__':
                             'func': "not valid ip",
                             'line': "",
                             'level': "ERROR",
-                            'message': str(e)
+                            'message': str(e) + " " +obj.file_name
                         }])
                         continue
 
@@ -211,12 +241,12 @@ if __name__ == '__main__':
 
                         models.execute_kw(cfg.db, uid, cfg.password, 'htc.sensor_transaction', 'create', model_list)
                         if os.path.exists(cfg.folders() + '/processed'):
-                            os.rename(join(cfg.folders(), obj.file_name),
+                            shutil.move(join(cfg.folders(), obj.file_name),
                                       join(cfg.folders() + '/processed', obj.file_name))
                         else:
                             try:
                                 os.mkdir(cfg.folders() + '/processed')
-                                os.rename(join(cfg.folders(), obj.file_name),
+                                shutil.move(join(cfg.folders(), obj.file_name),
                                           join(cfg.folders() + '/processed', obj.file_name))
                             except OSError:
                                 print("Creation of the directory %s failed" % cfg.folders()[0] + '/processed')
@@ -244,8 +274,10 @@ if __name__ == '__main__':
                     'level': "ERROR",
                     'message': str(e)
                 }])
+                logging.info(str(e))
 
 
     except Exception as e:
         print(e)
+        logging.info(str(e))
         sys.exit(-1)
