@@ -5,7 +5,9 @@ Import HTC Data
 
 ``` javascript
 > pip install auto-py-to-exe
-> After installation and run auto-py-to-exe to produce .exe file
+> After installation
+> 1. Go to workspace and open command window
+> 2.Paste auto-py-to-exe to get .exe file
 {
   "url": "http://localhost:8071",
   "folderPath": "D:\\xml_data\\",
