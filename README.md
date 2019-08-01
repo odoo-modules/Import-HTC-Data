@@ -6,8 +6,8 @@ Import HTC Data
 {
   "url": "http://localhost:8071",
   "folderPath": "D:\\xml_data\\",
-  "db": "htc_uat",
-  "username": "yarkyawsoe@zandotech.com",
+  "db": "dbname",
+  "username": "login@email",
   "password": "111111"
 }
 ```
