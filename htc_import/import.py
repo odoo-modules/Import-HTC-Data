@@ -141,8 +141,7 @@ if __name__ == '__main__':
                                                                     'htc.daily_counter', 'search_read',
                                                                     [[['sensor_id', '=', sensor[0]['id']]]],
                                                                     {'fields': ['transaction_date', 'daily_total_in',
-                                                                                'daily_total_out', 'alert_count',
-                                                                                'group_sensor_ids'], 'limit': 1})
+                                                                                'daily_total_out', 'alert_count'], 'limit': 1})
                             if daily_counter_model:
                                 if daily_counter_model[0]['transaction_date'] == str(trn_date):
                                     model_total_in = daily_counter_model[0]['daily_total_in'] + total_in
@@ -183,13 +182,21 @@ if __name__ == '__main__':
                                                                        'types': 'Out',
                                                                        'limit_count': gs['inform_limit_count'],
                                                                        'device_name': obj.device_name})
-                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.sensor', 'write',
-                                                  [daily_counter_model[0]['id'], {
-                                                      'daily_total_in': model_total_in,
-                                                      'daily_total_out': model_total_out,
-                                                      'alert_count': model_alert_count
-                                                  }])
-
+                                    models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write',
+                                                    [daily_counter_model[0]['id'], {
+                                                        'daily_total_in': model_total_in,
+                                                        'daily_total_out': model_total_out,
+                                                        'alert_count': model_alert_count,
+                                                    }])
+                                
+                                else:
+                                    models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write',
+                                                    [daily_counter_model[0]['id'], {
+                                                        'daily_total_in': total_in,
+                                                        'daily_total_out': total_out,
+                                                        'alert_count': 1,
+                                                        'transaction_date' :today,
+                                                    }])
                             else:
                                 if sensor[0]['group_sensor_ids']:
                                     group_sensor = models.execute_kw(cfg.db, uid, cfg.password,
@@ -222,7 +229,7 @@ if __name__ == '__main__':
                                                                    'types': 'Out',
                                                                    'limit_count': gs['inform_limit_count'],
                                                                    'device_name': obj.device_name})
-                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'create', [
+                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write', [
                                     {
                                         'site_id':
                                             site[0]['id'],
@@ -238,7 +245,28 @@ if __name__ == '__main__':
                                             1
                                     }
                                 ])
-
+                        else:
+                            daily_counter_model = models.execute_kw(cfg.db, uid, cfg.password,
+                                                                    'htc.daily_counter', 'search_read',
+                                                                    [[['sensor_id', '=', sensor[0]['id']]]],
+                                                                    {'fields': ['transaction_date', 'daily_total_in',
+                                                                                'daily_total_out', 'alert_count'], 'limit': 1})
+                            if daily_counter_model:
+                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write',
+                                                        [daily_counter_model[0]['id'], {
+                                                            'daily_total_in': 0,
+                                                            'daily_total_out': 0,
+                                                            'alert_count': 1,
+                                                            'transaction_date' :datetime.datetime.today(),
+                                                        }])
+                            else:
+                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'create',
+                                                        [{
+                                                            'daily_total_in': 0,
+                                                            'daily_total_out': 0,
+                                                            'alert_count': 1,
+                                                            'transaction_date' :datetime.datetime.today(),
+                                                        }])
                         models.execute_kw(cfg.db, uid, cfg.password, 'htc.sensor_transaction', 'create', model_list)
                         if os.path.exists(cfg.folders() + '/processed'):
                             shutil.move(join(cfg.folders(), obj.file_name),
@@ -259,7 +287,8 @@ if __name__ == '__main__':
                             'timezone_name': obj.timezone_name,
                             'software_version': obj.software_version,
                             'serial_number': obj.serial_number,
-                            'sensor_name': obj.name
+                            'sensor_name': obj.name,
+                            'status':True
                         }])
             except Exception as e:
                 id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
