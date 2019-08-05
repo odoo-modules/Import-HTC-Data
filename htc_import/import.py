@@ -83,6 +83,7 @@ if __name__ == '__main__':
                     valid_ip = []
                     if site:
                         file_name_vlaues = []
+                        format_symbol=[]
                         if len(site[0]['site_file_name_format']) == len(obj.file_name):
                             orginal_name_formats = obj.file_name.split(".")
                             file_name_ids = site[0]['file_name']
@@ -92,6 +93,7 @@ if __name__ == '__main__':
                                              {'fields': ['name', 'value']})
                             for i in range(len(file_names)):
                                 file_name = file_names[i]['name']
+                                format_symbol.append(file_name)
                                 if file_name == "#S" or file_name == "#I":
                                     field_name = switcher.get(file_name)
                                     field_value = site[0][field_name]
@@ -118,6 +120,9 @@ if __name__ == '__main__':
                                     except OSError:
                                         print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
                                         logging.info(str(e))
+                                format_symbol_text = ".".join(str(x) for x in format_symbol)
+                                format_symbol_text += ".xml"
+
                                 id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
                                     'create_uid': uid,
                                     'create_date': datetime.datetime.today(),
@@ -128,7 +133,7 @@ if __name__ == '__main__':
                                     'func': "not valid file name formate",
                                     'line': "",
                                     'level': "ERROR",
-                                    'message': "file name must be " + file_name_result + " insead of" + obj.file_name
+                                    'message': "file name must be " + format_symbol_text + " " + file_name_result + " insead of" + obj.file_name
                                 }])
                                 continue
                             try:
