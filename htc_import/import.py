@@ -83,17 +83,21 @@ if __name__ == '__main__':
                     valid_ip = []
                     if site:
                         file_name_vlaues = []
-                        format_symbol=[]
-                        if len(site[0]['site_file_name_format']) == len(obj.file_name):
-                            orginal_name_formats = obj.file_name.split(".")
-                            file_name_ids = site[0]['file_name']
-                            file_names = models.execute_kw(cfg.db, uid, cfg.password,
+                        format_symbol = []
+                        file_name_ids = site[0]['file_name']
+                        file_names = models.execute_kw(cfg.db, uid, cfg.password,
                                              'file.format', 'search_read',
                                              [[['id', 'in', file_name_ids]]],
                                              {'fields': ['name', 'value']})
-                            for i in range(len(file_names)):
+                        for i in range(len(file_names)):
                                 file_name = file_names[i]['name']
                                 format_symbol.append(file_name)
+                        format_symbol_text = ".".join(str(x) for x in format_symbol)
+                        format_symbol_text += ".xml"
+                        if len(site[0]['site_file_name_format']) == len(obj.file_name):
+                            orginal_name_formats = obj.file_name.split(".")
+                            for i in range(len(file_names)):
+                                file_name = file_names[i]['name']
                                 if file_name == "#S" or file_name == "#I":
                                     field_name = switcher.get(file_name)
                                     field_value = site[0][field_name]
@@ -112,6 +116,18 @@ if __name__ == '__main__':
                                 if os.path.exists(cfg.get_root_folder()  + '/Error'):
                                     shutil.move(join(cfg.get_source_folder(), obj.file_name),
                                       join(cfg.get_root_folder()  + '/Error', obj.file_name))
+                                    id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
+                                        'create_uid': uid,
+                                        'create_date': datetime.datetime.today(),
+                                        'name': "Call from RPC",
+                                        'type': "client",
+                                        'dbname': cfg.db,
+                                        'path': "",
+                                        'func': "not valid file name formate",
+                                        'line': "",
+                                        'level': "ERROR",
+                                        'message': "file name must be " + format_symbol_text + " " + file_name_result + " insead of" + obj.file_name
+                                    }])
                                 else:
                                     try:
                                         os.mkdir(cfg.get_source_folder() + '/Error')
@@ -120,9 +136,6 @@ if __name__ == '__main__':
                                     except OSError:
                                         print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
                                         logging.info(str(e))
-                                format_symbol_text = ".".join(str(x) for x in format_symbol)
-                                format_symbol_text += ".xml"
-
                                 id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
                                     'create_uid': uid,
                                     'create_date': datetime.datetime.today(),
@@ -177,7 +190,7 @@ if __name__ == '__main__':
                                         'func': "not valid file name format",
                                         'line': "",
                                         'level': "ERROR",
-                                        'message': "not valid file name format" + " " +obj.file_name
+                                        'message': "not valid file name format " + format_symbol_text + " " +obj.file_name
                                     }])
                             continue
                     if len(valid_ip) == 0:
