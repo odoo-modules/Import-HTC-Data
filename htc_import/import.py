@@ -192,6 +192,7 @@ if __name__ == '__main__':
                                         'level': "ERROR",
                                         'message': "not valid file name format " + format_symbol_text + " " +obj.file_name
                                     }])
+                            logging.info( "not valid file name format " + format_symbol_text + " " +obj.file_name)
                             continue
                     if len(valid_ip) == 0:
                         id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
@@ -217,6 +218,7 @@ if __name__ == '__main__':
                             except OSError:
                                 print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
                                 logging.info(str(e))
+                        logging.info("not valid ip format")
                         continue
 
                     if sensor and site:
