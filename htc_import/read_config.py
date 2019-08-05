@@ -4,6 +4,7 @@ from os.path import join, isfile
 
 
 class ReadConfig:
+
     def __init__(self):
         self.currentDirectory = getcwd()
         with open(join(self.currentDirectory, 'config.json')) as json_file:
@@ -14,6 +15,9 @@ class ReadConfig:
             self.username = data['username']
             self.folder_path = data['folderPath']
 
-    def folders(self):
+    def get_source_folder(self):
+        return self.folder_path + "Source"
+    
+    def get_root_folder(self):
         return self.folder_path
-        # return [f.path for f in scandir(self.folder_path) if f.is_dir()]
+        

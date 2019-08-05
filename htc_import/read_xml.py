@@ -6,20 +6,20 @@ from os.path import join, isfile
 import datetime
 
 
-
 class ReadXML:
-    def __init__ (self, cfg):
+
+    def __init__(self, cfg):
         self.cfg = cfg
         self.tags = ['Count', 'Object', 'Report', 'Properties', 'Metrics']
 
-    def read (self):
+    def read(self):
         dic_trans = dict()
-        for file in os.listdir(self.cfg.folders()):
-            path = os.path.join(self.cfg.folders(), file)
+        for file in os.listdir(self.cfg.get_source_folder()):
+            path = os.path.join(self.cfg.get_source_folder(), file)
             if os.path.isdir(path):
                 continue
             else:
-                name = self.cfg.folders()
+                name = self.cfg.get_source_folder()
                 with open(join(name, file)) as fp:
                     if file.endswith('.xml'):
                         trans = []
@@ -39,7 +39,8 @@ class ReadXML:
                                     tran.site_code = node.attrib.get('SiteId')
                                     tran.site_name = node.attrib.get('Sitename')
                                     tran.device_id = node.attrib.get('DeviceId')
-                                    tran.device_name = node.attrib.get('Devicename')
+                                    tran.device_name = node.attrib.get(
+                                        'Devicename')
                             elif node.tag == 'MacAddress':
                                 for tran in trans:
                                     tran.mac_address = node.text
@@ -66,9 +67,10 @@ class ReadXML:
                                     tran.software_version = node.text
                             elif node.tag == 'Report':
                                 for tran in trans:
-                                    tran.transaction_date = datetime.datetime.strptime(node.attrib.get('Date'),
-                                                                                       '%Y-%m-%d')
-                                    tran.week = tran.transaction_date.isocalendar()[1]
+                                    tran.transaction_date = datetime.datetime.strptime(
+                                        node.attrib.get('Date'), '%Y-%m-%d')
+                                    tran.week = tran.transaction_date.isocalendar(
+                                    )[1]
                                     tran.day = tran.transaction_date.weekday()
 
                             elif node.tag == 'Object':
