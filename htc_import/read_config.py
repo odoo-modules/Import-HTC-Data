@@ -17,7 +17,6 @@ class ReadConfig:
 
     def get_source_folder(self):
         return self.folder_path + "Source"
-    
+
     def get_root_folder(self):
         return self.folder_path
-        

@@ -12,16 +12,16 @@ from os import getcwd, path
 
 
 logging.basicConfig(filename="log.txt",
-                            filemode='a',
-                            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                            datefmt='%H:%M:%S',
-                            level=logging.INFO)
+                             filemode='a',
+                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                             datefmt='%H:%M:%S',
+                             level=logging.INFO)
 
 if __name__ == '__main__':
     try:
         cwd = getcwd()
-        if not path.isfile(cwd+'log.txt'):
-            open(cwd+'log.txt', 'w')
+        if not path.isfile(cwd + 'log.txt'):
+            open(cwd + 'log.txt', 'w')
         cfg = ReadConfig()
         switcher = {
             "#S": "site_name",
@@ -41,7 +41,8 @@ if __name__ == '__main__':
         can_access_transaction = models.execute_kw(cfg.db, uid, cfg.password,
                                                    'htc.sensor_transaction', 'check_access_rights',
                                                    ['write'], {'raise_exception': False})
-        current_file_name = None
+        current_file_name = ''
+        current_site_name = ''
 
         if can_access_sensor and can_access_transaction:
             xml = ReadXML(cfg)
@@ -74,21 +75,27 @@ if __name__ == '__main__':
                     sensor = models.execute_kw(cfg.db, uid, cfg.password,
                                                'htc.sensor', 'search_read',
                                                [[['mac_address', '=', mac_address]]],
-                                               {'fields': ['group_sensor_ids'],'limit': 1})
+                                               {'fields': ['group_sensor_ids'], 'limit': 1})
                     site = models.execute_kw(cfg.db, uid, cfg.password,
                                              'htc.site', 'search_read',
                                              [[['site_code', '=', site_code]]],
-                                             {'fields': ['ip_range', 'site_file_name_format','file_name','site_name'], 'limit': 1})
+                                             {'fields': ['ip_range',
+                                                         'site_file_name_format',
+                                                         'file_name',
+                                                         'site_name'], 'limit': 1})
                     ipList = []
                     valid_ip = []
                     if site:
+                        site_obj = site[0]
+                        current_site_name = site_obj.get('site_name')
                         file_name_vlaues = []
                         format_symbol = []
                         file_name_ids = site[0]['file_name']
                         file_names = models.execute_kw(cfg.db, uid, cfg.password,
-                                             'file.format', 'search_read',
-                                             [[['id', 'in', file_name_ids]]],
-                                             {'fields': ['name', 'value']})
+                                                       'file.format',
+                                                       'search_read',
+                                                       [[['id', 'in', file_name_ids]]],
+                                                       {'fields': ['name', 'value']})
                         for i in range(len(file_names)):
                                 file_name = file_names[i]['name']
                                 format_symbol.append(file_name)
@@ -113,9 +120,8 @@ if __name__ == '__main__':
                             file_name_result = ".".join(str(x) for x in file_name_vlaues)
                             file_name_result = file_name_result.replace(":", "-")
                             if file_name_result != obj.file_name:
-                                if os.path.exists(cfg.get_root_folder()  + '/Error'):
-                                    shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                      join(cfg.get_root_folder()  + '/Error', obj.file_name))
+                                if os.path.exists(cfg.get_root_folder() + '/Error'):
+                                    shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Error', obj.file_name))
                                     id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
                                         'create_uid': uid,
                                         'create_date': datetime.datetime.today(),
@@ -131,8 +137,7 @@ if __name__ == '__main__':
                                 else:
                                     try:
                                         os.mkdir(cfg.get_source_folder() + '/Error')
-                                        shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                                join(cfg.get_source_folder() + '/Error', obj.file_name))
+                                        shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_source_folder() + '/Error', obj.file_name))
                                     except OSError:
                                         print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
                                         logging.info(str(e))
@@ -165,34 +170,28 @@ if __name__ == '__main__':
                                     'func': "not valid ip",
                                     'line': "",
                                     'level': "ERROR",
-                                    'message': str(e) + " " +obj.file_name
+                                    'message': str(e) + " " + obj.file_name
                                 }])
                                 continue
                         else:
                             if os.path.exists(cfg.get_root_folder() + '/Error'):
-                                shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                      join(cfg.get_root_folder() + '/Error', obj.file_name))
+                                shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Error', obj.file_name))
                             else:
                                 try:
                                     os.mkdir(cfg.get_root_folder() + '/Error')
-                                    shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                            join(cfg.get_root_folder() + '/Error', obj.file_name))
+                                    shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Error', obj.file_name))
                                 except OSError:
                                     print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
                                     logging.info(str(e))
-                            id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
-                                        'create_uid': uid,
-                                        'create_date': datetime.datetime.today(),
-                                        'name': "Call from RPC",
-                                        'type': "client",
-                                        'dbname': cfg.db,
-                                        'path': "",
-                                        'func': "not valid file name format",
-                                        'line': "",
-                                        'level': "ERROR",
-                                        'message': "not valid file name format " + format_symbol_text + " " +obj.file_name
-                                    }])
-                            logging.info( "not valid file name format " + format_symbol_text + " " +obj.file_name)
+                            id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{'create_uid': uid,
+                                                                                                        'create_date': datetime.datetime.today(),
+                                                                                                        'name': "Call from RPC",
+                                                                                                        'type': "client",
+                                                                                                        'dbname': cfg.db,
+                                                                                                        'path': "", 'func': "not valid file name format",
+                                                                                                        'line': "", 'level': "ERROR",
+                                                                                                        'message': "not valid file name format " + format_symbol_text + " " + obj.file_name + 'Site Name = ' + current_site_name}])
+                            logging.info("not valid file name format " + format_symbol_text + " " + obj.file_name)
                             continue
                     if len(valid_ip) == 0:
                         id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
@@ -205,16 +204,14 @@ if __name__ == '__main__':
                             'func': "not valid ip",
                             'line': "",
                             'level': "ERROR",
-                            'message': str(e) + " " +obj.file_name
+                            'message': str(e) + " " + obj.file_name
                         }])
                         if os.path.exists(cfg.get_root_folder() + '/Error'):
-                                shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                      join(cfg.get_root_folder() + '/Error', obj.file_name))
+                                shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Error', obj.file_name))
                         else:
                             try:
-                                os.mkdir(cfgget_root_folder()  + '/Error')
-                                shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                        join(cfg.get_root_folder()  + '/Error', obj.file_name))
+                                os.mkdir(cfg.get_root_folder() + '/Error')
+                                shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Error', obj.file_name))
                             except OSError:
                                 print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
                                 logging.info(str(e))
@@ -260,9 +257,12 @@ if __name__ == '__main__':
                                                                                 'daily_total_out', 'alert_count'], 'limit': 1})
                             if daily_counter_model:
                                 if daily_counter_model[0]['transaction_date'] == str(trn_date):
-                                    model_total_in = daily_counter_model[0]['daily_total_in'] + total_in
-                                    model_total_out = daily_counter_model[0]['daily_total_out'] + total_out
-                                    model_alert_count = daily_counter_model[0]['alert_count']
+                                    model_total_in = \
+                                        daily_counter_model[0]['daily_total_in'] + total_in
+                                    model_total_out = \
+                                        daily_counter_model[0]['daily_total_out'] + total_out
+                                    model_alert_count = \
+                                        daily_counter_model[0]['alert_count']
                                     if sensor[0]['group_sensor_ids']:
                                         group_sensor = models.execute_kw(cfg.db, uid, cfg.password,
                                                                          'htc.group_sensors', 'search_read',
@@ -272,7 +272,7 @@ if __name__ == '__main__':
                                                                                      'alert_count',
                                                                                      'inform_limit_count']})
                                         for gs in group_sensor:
-                                            if gs['enable_alert']:
+                                            if gs['enable_alert'] and gs['inform_limit_count'] > 0:
                                                 if gs['in_status'] == 5 and \
                                                         model_total_in > gs['inform_limit_count'] * model_alert_count:
                                                     model_alert_count += 1
@@ -298,20 +298,9 @@ if __name__ == '__main__':
                                                                        'types': 'Out',
                                                                        'limit_count': gs['inform_limit_count'],
                                                                        'device_name': obj.device_name})
-                                    models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write',
-                                                    [daily_counter_model[0]['id'], {
-                                                        'daily_total_in': model_total_in,
-                                                        'daily_total_out': model_total_out,
-                                                        'alert_count': model_alert_count,
-                                                    }])
+                                    models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write', [daily_counter_model[0]['id'], {'daily_total_in': model_total_in, 'daily_total_out': model_total_out, 'alert_count': model_alert_count}])
                                 else:
-                                    models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write',
-                                                    [daily_counter_model[0]['id'], {
-                                                        'daily_total_in': total_in,
-                                                        'daily_total_out': total_out,
-                                                        'alert_count': 1,
-                                                        'transaction_date' :today,
-                                                    }])
+                                    models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write', [daily_counter_model[0]['id'], {'daily_total_in': total_in, 'daily_total_out': total_out, 'alert_count': 1, 'transaction_date': today}])
                             else:
                                 if sensor[0]['group_sensor_ids']:
                                     group_sensor = models.execute_kw(cfg.db, uid, cfg.password,
@@ -321,7 +310,7 @@ if __name__ == '__main__':
                                                                                  'in_status',
                                                                                  'alert_count']})
                                     for gs in group_sensor:
-                                        if gs['enable_alert']:
+                                        if gs['enable_alert'] and gs['inform_limit_count'] > 0:
                                             if gs['in_status'] == 5 and \
                                                     total_in > gs['inform_limit_count'] * model_alert_count:
                                                 model_alert_count += 1
@@ -367,32 +356,20 @@ if __name__ == '__main__':
                                                                     {'fields': ['transaction_date', 'daily_total_in',
                                                                                 'daily_total_out', 'alert_count'], 'limit': 1})
                             if daily_counter_model:
-                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write',
-                                                        [daily_counter_model[0]['id'], {
-                                                            'daily_total_in': 0,
-                                                            'daily_total_out': 0,
-                                                            'alert_count': 1,
-                                                            'transaction_date' :datetime.datetime.today(),
-                                                        }])
+                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'write', [daily_counter_model[0]['id'], {'daily_total_in': 0, 'daily_total_out': 0, 'alert_count': 1, 'transaction_date': datetime.datetime.today()}])
+
                             else:
-                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'create',
-                                                        [{
-                                                            'daily_total_in': 0,
-                                                            'daily_total_out': 0,
-                                                            'alert_count': 1,
-                                                            'transaction_date' :datetime.datetime.today(),
-                                                        }])
+                                models.execute_kw(cfg.db, uid, cfg.password, 'htc.daily_counter', 'create', [{'daily_total_in': 0, 'daily_total_out': 0, 'alert_count': 1, 'transaction_date': datetime.datetime.today(), 'site_id': site_obj.get('id'), 'sensor_id': sensor[0]['id']}])
+
                         models.execute_kw(cfg.db, uid, cfg.password, 'htc.sensor_transaction', 'create', model_list)
-                        if os.path.exists(cfg.get_root_folder()  + '/Processed'):
-                            shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                      join(cfg.get_root_folder()  + '/Processed', obj.file_name))
+                        if os.path.exists(cfg.get_root_folder() + '/Processed'):
+                            shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Processed', obj.file_name))
                         else:
                             try:
-                                os.mkdir(cfg.get_root_folder()  + '/Processed')
-                                shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                          join(cfg.get_root_folder()  + '/Processed', obj.file_name))
+                                os.mkdir(cfg.get_root_folder() + '/Processed')
+                                shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Processed', obj.file_name))
                             except OSError:
-                                print("Creation of the directory %s failed" % cfg.get_root_folder()  + '/Processed')
+                                print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Processed')
 
                         models.execute_kw(cfg.db, uid, cfg.password, 'htc.sensor', 'write', [sensor[0]['id'], {
                             'ip_address': obj.ip_address,
@@ -403,7 +380,7 @@ if __name__ == '__main__':
                             'software_version': obj.software_version,
                             'serial_number': obj.serial_number,
                             'sensor_name': obj.name,
-                            'status':True
+                            'status': True
                         }])
             except Exception as e:
                 id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
@@ -416,22 +393,18 @@ if __name__ == '__main__':
                     'func': "populate data",
                     'line': "",
                     'level': "ERROR",
-                    'message': str(e)
+                    'message': str(e) + 'File Name = ' + current_file_name + ' Site Name = ' + current_site_name
                 }])
-                if os.path.exists(cfg.get_root_folder()  + '/Error'):
-                                shutil.move(join(cfg.get_source_folder(), obj.file_name),
-                                      join(cfg.get_root_folder()  + '/Error', obj.file_name))
+                if os.path.exists(cfg.get_root_folder() + '/Error'):
+                                shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Error', obj.file_name))
                 else:
                     try:
-                        os.mkdir(cfg.get_root_folder()  + '/Error')
-                        shutil.move(join(cfg.get_source_folder(), current_file_name),
-                                join(cfg.get_root_folder()  + '/Error', current_file_name))
+                        os.mkdir(cfg.get_root_folder() + '/Error')
+                        shutil.move(join(cfg.get_source_folder(), current_file_name), join(cfg.get_root_folder() + '/Error', current_file_name))
                     except OSError:
-                        print("Creation of the directory %s failed" % cfg.get_root_folder()  + '/Error')
+                        print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
                         logging.info(str(e))
                 logging.info(str(e))
-
-
     except Exception as e:
         print(e)
         logging.info(str(e))

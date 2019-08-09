@@ -1,7 +1,7 @@
 {
-  "url": "http://localhost:8071",
+  "url": "http://zando.local:8069",
   "folderPath": "D:\\xml_data\\",
-  "db": "htc_uat",
+  "db": "htc_dev",
   "username": "yarkyawsoe@zandotech.com",
   "password": "111111"
 }
