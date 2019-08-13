@@ -82,7 +82,8 @@ if __name__ == '__main__':
                                              {'fields': ['ip_range',
                                                          'site_file_name_format',
                                                          'file_name',
-                                                         'site_name'], 'limit': 1})
+                                                         'site_name',
+                                                         'debug_mode_enable'], 'limit': 1})
                     ipList = []
                     valid_ip = []
                     if site:
@@ -122,6 +123,27 @@ if __name__ == '__main__':
                             if file_name_result != obj.file_name:
                                 if os.path.exists(cfg.get_root_folder() + '/Error'):
                                     shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_root_folder() + '/Error', obj.file_name))
+                                    if site_obj.get('debug_mode_enable'):
+                                        id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
+                                            'create_uid': uid,
+                                            'create_date': datetime.datetime.today(),
+                                            'name': "Call from RPC",
+                                            'type': "client",
+                                            'dbname': cfg.db,
+                                            'path': "",
+                                            'func': "not valid file name formate",
+                                            'line': "",
+                                            'level': "ERROR",
+                                            'message': "file name must be " + format_symbol_text + " " + file_name_result + " insead of" + obj.file_name
+                                        }])
+                                else:
+                                    try:
+                                        os.mkdir(cfg.get_source_folder() + '/Error')
+                                        shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_source_folder() + '/Error', obj.file_name))
+                                    except OSError:
+                                        print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
+                                        logging.info(str(e))
+                                if site_obj.get('debug_mode_enable'):
                                     id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
                                         'create_uid': uid,
                                         'create_date': datetime.datetime.today(),
@@ -134,25 +156,6 @@ if __name__ == '__main__':
                                         'level': "ERROR",
                                         'message': "file name must be " + format_symbol_text + " " + file_name_result + " insead of" + obj.file_name
                                     }])
-                                else:
-                                    try:
-                                        os.mkdir(cfg.get_source_folder() + '/Error')
-                                        shutil.move(join(cfg.get_source_folder(), obj.file_name), join(cfg.get_source_folder() + '/Error', obj.file_name))
-                                    except OSError:
-                                        print("Creation of the directory %s failed" % cfg.get_root_folder() + '/Error')
-                                        logging.info(str(e))
-                                id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
-                                    'create_uid': uid,
-                                    'create_date': datetime.datetime.today(),
-                                    'name': "Call from RPC",
-                                    'type': "client",
-                                    'dbname': cfg.db,
-                                    'path': "",
-                                    'func': "not valid file name formate",
-                                    'line': "",
-                                    'level': "ERROR",
-                                    'message': "file name must be " + format_symbol_text + " " + file_name_result + " insead of" + obj.file_name
-                                }])
                                 continue
                             try:
                                 ipList = list(ipaddress.ip_network(site[0]['ip_range'], False).hosts())
@@ -160,18 +163,19 @@ if __name__ == '__main__':
                                 valid_ip = list(filter(lambda x: x == obj.ip_address, extract_ip_list))
                             except Exception as e:
                                 logging.info(str(e))
-                                id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
-                                    'create_uid': uid,
-                                    'create_date': datetime.datetime.today(),
-                                    'name': "Call from RPC",
-                                    'type': "client",
-                                    'dbname': cfg.db,
-                                    'path': "",
-                                    'func': "not valid ip",
-                                    'line': "",
-                                    'level': "ERROR",
-                                    'message': str(e) + " " + obj.file_name
-                                }])
+                                if site_obj.get('debug_mode_enable'):
+                                    id = models.execute_kw(cfg.db, uid, cfg.password, 'ir.logging', 'create', [{
+                                        'create_uid': uid,
+                                        'create_date': datetime.datetime.today(),
+                                        'name': "Call from RPC",
+                                        'type': "client",
+                                        'dbname': cfg.db,
+                                        'path': "",
+                                        'func': "not valid ip",
+                                        'line': "",
+                                        'level': "ERROR",
+                                        'message': str(e) + " " + obj.file_name
+                                    }])
                                 continue
                         else:
                             if os.path.exists(cfg.get_root_folder() + '/Error'):
